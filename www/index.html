@@ -1,0 +1,444 @@
+<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"></head><body><title>بوصلة بسيطة</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600&family=Reem+Kufi:wght@500;700&display=swap">
+<style>
+/* Layout: one-screen instrument. Readout on top, round card dial in the middle, controls docked below. */
+:root {
+  --bg: #e6edef;
+  --surface: #f6f9fa;
+  --face: #fbfdfd;
+  --bezel: #d3dfe3;
+  --ink: #0f252c;
+  --muted: #56717a;
+  --line: #b4c5cb;
+  --north: #c4312a;
+  --accent: #0e6a73;
+  --accent-ink: #ffffff;
+  --font-display: 'Reem Kufi', 'Segoe UI', Tahoma, sans-serif;
+  --font-body: 'IBM Plex Sans Arabic', 'Segoe UI', Tahoma, sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0a1a20;
+    --surface: #10252d;
+    --face: #0d2027;
+    --bezel: #163039;
+    --ink: #e4eff2;
+    --muted: #8da8b0;
+    --line: #2b4650;
+    --north: #ff6f62;
+    --accent: #52c6d1;
+    --accent-ink: #06191d;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0a1a20;
+  --surface: #10252d;
+  --face: #0d2027;
+  --bezel: #163039;
+  --ink: #e4eff2;
+  --muted: #8da8b0;
+  --line: #2b4650;
+  --north: #ff6f62;
+  --accent: #52c6d1;
+  --accent-ink: #06191d;
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html, body { height: 100%; }
+body {
+  margin: 0;
+  padding-inline: 16px;
+  padding-block: 12px;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-body);
+  -webkit-text-size-adjust: 100%;
+}
+
+.app {
+  height: 100%;
+  min-height: 0;
+  max-width: 440px;
+  margin-inline: auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-evenly;
+  gap: 12px;
+}
+
+.readout { text-align: center; }
+.deg {
+  direction: ltr;
+  unicode-bidi: isolate;
+  display: inline-flex;
+  align-items: flex-start;
+  justify-content: center;
+  min-width: 3.6ch;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: clamp(52px, 15vw, 84px);
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+.deg .unit {
+  font-size: 0.45em;
+  color: var(--muted);
+  margin-inline-start: 0.08em;
+}
+.name {
+  margin: 6px 0 0;
+  font-size: clamp(18px, 5vw, 22px);
+  font-weight: 600;
+  color: var(--accent);
+}
+
+.dialWrap {
+  width: min(100%, 46vh);
+  max-width: 100%;
+  aspect-ratio: 1 / 1;
+  border-radius: 50%;
+  touch-action: none;
+  cursor: grab;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+.dialWrap[data-mode="sensor"] { cursor: default; }
+.dialWrap[data-drag="1"] { cursor: grabbing; }
+.dialWrap:focus-visible { outline: 3px solid var(--accent); outline-offset: 4px; }
+.dialWrap svg { display: block; width: 100%; height: 100%; }
+
+.bezel { fill: var(--bezel); stroke: var(--line); stroke-width: 1.5; }
+.face { fill: var(--face); stroke: var(--line); stroke-width: 1; }
+.tick { stroke: var(--ink); }
+.tick.minor { stroke: var(--muted); }
+.num { fill: var(--muted); font: 500 12px var(--font-body); text-anchor: middle; dominant-baseline: central; }
+.card { fill: var(--ink); font: 700 22px var(--font-display); text-anchor: middle; dominant-baseline: central; }
+.card.n { fill: var(--north); }
+.northMark { fill: var(--north); }
+.needleN { fill: var(--north); }
+.needleS { fill: var(--muted); }
+.hub { fill: var(--bezel); stroke: var(--ink); stroke-width: 2; }
+.lubber { fill: var(--accent); }
+
+.controls { width: 100%; display: flex; flex-direction: column; gap: 12px; }
+.seg {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  overflow: hidden;
+  background: var(--surface);
+}
+.seg button {
+  min-height: 46px;
+  border: 0;
+  background: transparent;
+  color: var(--ink);
+  font: 600 15px var(--font-body);
+  cursor: pointer;
+}
+.seg button[aria-pressed="true"] { background: var(--accent); color: var(--accent-ink); }
+.seg button:focus-visible { outline: 3px solid var(--ink); outline-offset: -3px; }
+
+.sliderRow { display: flex; align-items: center; gap: 12px; }
+.sliderRow label { font-size: 14px; color: var(--muted); }
+.sliderRow input { flex: 1; min-width: 0; accent-color: var(--accent); }
+.sliderRow input:disabled { opacity: 0.5; }
+
+.status {
+  margin: 0;
+  min-height: 3.2em;
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--muted);
+  text-wrap: pretty;
+}
+html { padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px); }
+</style>
+
+<main class="app" dir="rtl" lang="ar">
+  <header class="readout">
+    <div class="deg"><span id="degVal">52</span><span class="unit">°</span></div>
+    <p class="name" id="dirName">شمال شرق</p>
+  </header>
+
+  <div class="dialWrap" id="dialWrap" tabindex="0" role="slider" aria-label="اتجاه البوصلة بالدرجات" aria-valuemin="0" aria-valuemax="359" aria-valuenow="52" data-mode="manual">
+    <svg viewBox="-212 -212 424 424" dir="ltr" aria-hidden="true" focusable="false">
+      <circle class="bezel" r="208"></circle>
+      <circle class="face" r="184"></circle>
+      <g id="dial">
+        <polygon class="northMark" points="0,-178 -9,-160 9,-160"></polygon>
+        <polygon class="needleS" points="0,88 -8,0 8,0"></polygon>
+        <polygon class="needleN" points="0,-88 -8,0 8,0"></polygon>
+      </g>
+      <circle class="hub" r="7"></circle>
+      <polygon class="lubber" points="0,-184 -9,-206 9,-206"></polygon>
+    </svg>
+  </div>
+
+  <section class="controls">
+    <div class="seg" role="group" aria-label="مصدر الاتجاه">
+      <button type="button" id="btnManual" aria-pressed="true">يدوي</button>
+      <button type="button" id="btnSensor" aria-pressed="false">حساس الجهاز</button>
+    </div>
+    <div class="sliderRow">
+      <label for="slider">الاتجاه</label>
+      <input id="slider" type="range" min="0" max="359" step="1" value="52" dir="ltr">
+    </div>
+    <p class="status" id="status" role="status"></p>
+  </section>
+</main>
+
+<script>
+(function () {
+  'use strict';
+
+  var NAMES = ['شمال', 'شمال شرق', 'شرق', 'جنوب شرق', 'جنوب', 'جنوب غرب', 'غرب', 'شمال غرب'];
+  var MSG = {
+    manual: 'الوضع اليدوي. اسحب القرص بإصبعك أو حرّك الشريط لضبط الاتجاه.',
+    waiting: 'جارٍ انتظار قراءة من حساس الجهاز…',
+    live: 'الحساس يعمل. ابتعد عن المعادن والمغناطيس للحصول على قراءة أدق.',
+    denied: 'لم يتم السماح بالوصول إلى الحساس، لذلك رجعنا إلى الوضع اليدوي.',
+    none: 'لا تصل قراءات الحساس إلى هذه الصفحة، لذلك رجعنا إلى الوضع اليدوي.'
+  };
+
+  var NS = 'http://www.w3.org/2000/svg';
+  function $(id) { return document.getElementById(id); }
+  function el(name, attrs, parent) {
+    var n = document.createElementNS(NS, name);
+    for (var k in attrs) { if (Object.prototype.hasOwnProperty.call(attrs, k)) n.setAttribute(k, attrs[k]); }
+    if (parent) parent.appendChild(n);
+    return n;
+  }
+  function norm360(x) { return ((x % 360) + 360) % 360; }
+  function wrap180(x) { return (((x % 360) + 540) % 360) - 180; }
+
+  var wrap = $('dialWrap');
+  var dial = $('dial');
+  var degEl = $('degVal');
+  var nameEl = $('dirName');
+  var slider = $('slider');
+  var statusEl = $('status');
+  var btnManual = $('btnManual');
+  var btnSensor = $('btnSensor');
+
+  /* ---------- build the card ---------- */
+  var uprights = [];
+  function polar(r, a) {
+    var t = a * Math.PI / 180;
+    return [r * Math.sin(t), -r * Math.cos(t)];
+  }
+  var a, p, node;
+  for (a = 5; a < 360; a += 5) {
+    var isLong = a % 30 === 0, mid = a % 10 === 0;
+    var len = isLong ? 16 : (mid ? 11 : 6);
+    el('line', {
+      x1: 0, y1: -178, x2: 0, y2: -178 + len,
+      transform: 'rotate(' + a + ')',
+      'class': mid ? 'tick' : 'tick minor',
+      'stroke-width': isLong ? 2 : (mid ? 1.4 : 1)
+    }, dial);
+  }
+  for (a = 30; a < 360; a += 30) {
+    p = polar(148, a);
+    node = el('text', { x: p[0].toFixed(2), y: p[1].toFixed(2), 'class': 'num' }, dial);
+    node.textContent = String(a);
+    uprights.push({ node: node, x: p[0], y: p[1] });
+  }
+  var cardinals = [['شمال', 0], ['شرق', 90], ['جنوب', 180], ['غرب', 270]];
+  cardinals.forEach(function (c) {
+    var q = polar(118, c[1]);
+    var t = el('text', { x: q[0].toFixed(2), y: q[1].toFixed(2), 'class': c[1] === 0 ? 'card n' : 'card' }, dial);
+    t.textContent = c[0];
+    uprights.push({ node: t, x: q[0], y: q[1] });
+  });
+
+  /* ---------- heading state and drawing ---------- */
+  var reduce = false;
+  try { reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches; } catch (e1) { reduce = false; }
+
+  var target = 52, shown = 52, raf = 0, lastInt = -1;
+
+  function draw() {
+    dial.setAttribute('transform', 'rotate(' + (-shown).toFixed(2) + ')');
+    for (var i = 0; i < uprights.length; i++) {
+      var u = uprights[i];
+      u.node.setAttribute('transform', 'rotate(' + shown.toFixed(2) + ' ' + u.x.toFixed(2) + ' ' + u.y.toFixed(2) + ')');
+    }
+    var n = Math.round(shown) % 360;
+    if (n !== lastInt) {
+      lastInt = n;
+      var nm = NAMES[Math.round(n / 45) % 8];
+      degEl.textContent = String(n);
+      nameEl.textContent = nm;
+      wrap.setAttribute('aria-valuenow', String(n));
+      wrap.setAttribute('aria-valuetext', n + ' درجة، ' + nm);
+    }
+  }
+  function tick() {
+    raf = 0;
+    var d = wrap180(target - shown);
+    if (Math.abs(d) < 0.05) { shown = target; draw(); return; }
+    shown = norm360(shown + d * 0.25);
+    draw();
+    raf = requestAnimationFrame(tick);
+  }
+  function go(instant) {
+    if (instant || reduce) {
+      if (raf) { cancelAnimationFrame(raf); raf = 0; }
+      shown = target;
+      draw();
+      return;
+    }
+    if (!raf) raf = requestAnimationFrame(tick);
+  }
+
+  /* ---------- manual control ---------- */
+  var mode = 'manual';
+  function setManual(h) {
+    target = norm360(h);
+    slider.value = String(Math.round(target) % 360);
+    go(false);
+  }
+  slider.addEventListener('input', function () { setManual(Number(slider.value)); });
+
+  var drag = null;
+  function pointerAngle(e) {
+    var r = wrap.getBoundingClientRect();
+    var cx = r.left + r.width / 2, cy = r.top + r.height / 2;
+    return Math.atan2(e.clientX - cx, -(e.clientY - cy)) * 180 / Math.PI;
+  }
+  wrap.addEventListener('pointerdown', function (e) {
+    if (mode !== 'manual') return;
+    drag = { a: pointerAngle(e), h: target };
+    wrap.setAttribute('data-drag', '1');
+    try { wrap.setPointerCapture(e.pointerId); } catch (e2) { /* optional */ }
+  });
+  wrap.addEventListener('pointermove', function (e) {
+    if (!drag) return;
+    setManual(drag.h - wrap180(pointerAngle(e) - drag.a));
+  });
+  function endDrag() { drag = null; wrap.removeAttribute('data-drag'); }
+  wrap.addEventListener('pointerup', endDrag);
+  wrap.addEventListener('pointercancel', endDrag);
+  wrap.addEventListener('keydown', function (e) {
+    if (mode !== 'manual') return;
+    var step = e.shiftKey ? 10 : 1, k = e.key, h = null, base = Math.round(target);
+    if (k === 'ArrowRight' || k === 'ArrowUp') h = base + step;
+    else if (k === 'ArrowLeft' || k === 'ArrowDown') h = base - step;
+    else if (k === 'PageUp') h = base + 10;
+    else if (k === 'PageDown') h = base - 10;
+    else if (k === 'Home') h = 0;
+    if (h === null) return;
+    e.preventDefault();
+    setManual(h);
+  });
+
+  /* ---------- device sensor ---------- */
+  function tiltHeading(alpha, beta, gamma) {
+    var r = Math.PI / 180;
+    var al = alpha * r, be = beta * r, ga = gamma * r;
+    var cA = Math.cos(al), sA = Math.sin(al), cB = Math.cos(be), sB = Math.sin(be), cG = Math.cos(ga), sG = Math.sin(ga);
+    var e, n;
+    if (cB * cG > 0.7) { /* phone lying roughly flat: use the top edge */
+      e = -sA * cB; n = cA * cB;
+    } else { /* phone upright: use the direction the back faces */
+      e = -sG * cA - cG * sB * sA;
+      n = -sG * sA + cG * sB * cA;
+    }
+    return norm360(Math.atan2(e, n) * 180 / Math.PI);
+  }
+
+  var run = 0, gotData = false, timer = 0, listening = false;
+
+  function setStatus(key) { statusEl.textContent = MSG[key]; }
+  function setMode(m) {
+    mode = m;
+    btnManual.setAttribute('aria-pressed', m === 'manual' ? 'true' : 'false');
+    btnSensor.setAttribute('aria-pressed', m === 'sensor' ? 'true' : 'false');
+    slider.disabled = m === 'sensor';
+    wrap.setAttribute('data-mode', m);
+    if (m === 'sensor') endDrag();
+  }
+
+  function onOrient(ev) {
+    if (mode !== 'sensor') return;
+    var h = null;
+    if (typeof ev.webkitCompassHeading === 'number' && isFinite(ev.webkitCompassHeading) && ev.webkitCompassHeading >= 0) {
+      h = ev.webkitCompassHeading;
+    } else if ((ev.absolute === true || ev.type === 'deviceorientationabsolute') &&
+               ev.alpha !== null && ev.beta !== null && ev.gamma !== null) {
+      h = tiltHeading(ev.alpha, ev.beta, ev.gamma);
+    }
+    if (h === null || !isFinite(h)) return;
+    h = norm360(h);
+    if (!gotData) {
+      gotData = true;
+      clearTimeout(timer);
+      setStatus('live');
+      target = h;
+      slider.value = String(Math.round(h) % 360);
+      go(true);
+      return;
+    }
+    target = norm360(target + wrap180(h - target) * 0.3);
+    slider.value = String(Math.round(target) % 360);
+    go(false);
+  }
+
+  function stopSensor() {
+    run++;
+    clearTimeout(timer);
+    if (listening) {
+      window.removeEventListener('deviceorientationabsolute', onOrient);
+      window.removeEventListener('deviceorientation', onOrient);
+      listening = false;
+    }
+  }
+  function fail(key) {
+    stopSensor();
+    setMode('manual');
+    setStatus(key);
+  }
+
+  async function startSensor() {
+    stopSensor();
+    var my = run;
+    gotData = false;
+    setMode('sensor');
+    setStatus('waiting');
+    var D = window.DeviceOrientationEvent;
+    if (typeof D === 'undefined') { fail('none'); return; }
+    if (typeof D.requestPermission === 'function') {
+      var res;
+      try { res = await D.requestPermission(); }
+      catch (err) { if (my === run) fail('denied'); return; }
+      if (my !== run) return;
+      if (res !== 'granted') { fail('denied'); return; }
+    }
+    window.addEventListener('deviceorientationabsolute', onOrient);
+    window.addEventListener('deviceorientation', onOrient);
+    listening = true;
+    timer = setTimeout(function () { if (my === run && !gotData) fail('none'); }, 3000);
+  }
+
+  btnSensor.addEventListener('click', function () { startSensor(); });
+  btnManual.addEventListener('click', function () {
+    stopSensor();
+    setMode('manual');
+    setStatus('manual');
+  });
+
+  /* ---------- start ---------- */
+  setMode('manual');
+  setStatus('manual');
+  slider.value = String(Math.round(target));
+  draw();
+})();
+</script>
+</body></html>
